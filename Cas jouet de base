@@ -1,0 +1,24 @@
+import random
+import matplotlib.pyplot as plt
+
+random.seed(42)
+nb_clients = 9 
+
+# Définition du problème
+C = 50  #capacité des véhicules
+depot = (random.randint(-50,50),random.randint(-50,50))
+clients = {}
+for i in range(nb_clients):
+    x = random.randint(-50,50)
+    y = random.randint(-50,50)
+    demande = random.randint(1,10)  #choix bornes demande arbitraire
+    clients[i] = [x,y,demande]
+
+print(clients)
+
+coord_x = [clients[i][0] for i in clients]
+coord_y = [clients[i][1] for i in clients]
+plt.scatter(coord_x, coord_y, marker='o', label = 'Clients')
+plt.scatter(depot[0], depot[1], color = 'red', label = 'Depot')
+plt.legend()
+plt.show()
