@@ -1,24 +1,74 @@
+import math
+from math import inf
+from math import sqrt
 import random
 import matplotlib.pyplot as plt
+import numpy as np
 
 random.seed(42)
-nb_clients = 9 
+nb_clients = 3
+C = 50  #capacité des véhicules
 
 # Définition du problème
-C = 50  #capacité des véhicules
-depot = (random.randint(-50,50),random.randint(-50,50))
-clients = {}
+depot = ((random.randint(-50,50),random.randint(-50,50)),0)   # demande à 0 pour le depot
+clients = []
 for i in range(nb_clients):
     x = random.randint(-50,50)
     y = random.randint(-50,50)
-    demande = random.randint(1,10)  #choix bornes demande arbitraire
-    clients[i] = [x,y,demande]
+    demande = random.randint(1,10)  # choix bornes demande arbitraire
+    clients.append(((x,y),demande))
 
-print(clients)
+clients.append(depot)  #ajout du depot dans les stop possibles
+nb_clients = nb_clients+1
+print(clients)   # par ex clients = [((-47, 44), 5), ((-19, -22), 3), ((44, -37), 9), ((31, -36), 0)]
 
-coord_x = [clients[i][0] for i in clients]
-coord_y = [clients[i][1] for i in clients]
+# -------------------------- Résolution classique à l'instinct
+def distance(a,b):    # distance entre deux clients, a = client[i] et b = clients[j]
+    if a == b:
+        return 0
+    return sqrt((a[0][0]-b[0][0])**2 + (a[0][1]-b[0][1])**2)
+
+# Définition de la matrice des distances entre les différents points
+matrice_dist = np.zeros((nb_clients,nb_clients))
+for stop_1 in range(nb_clients):
+    for stop_2 in range(nb_clients):
+        matrice_dist[stop_1][stop_2] += distance(clients[stop_1],clients[stop_2])
+print(matrice_dist)
+
+# Définition du graphe associé aux clients
+graphe = {}
+for i in range(len(clients)):
+    for j in range(len(clients)):
+        if i != j:
+            dist = distance(clients[i], clients[j])
+            if i in graphe:
+                graphe[i].append((j, dist))
+            else:
+                graphe[i] = [(j, dist)]
+print(graphe)
+
+def solution(graphe, depart):
+    ici = depart
+    tournee = [depart]
+    check = {depart}
+    distance_tot = 0
+    while len(check) < nb_clients:
+        client_dispo = [(v,d) for v,d in graphe[ici] if v not in check]
+        prochain, _ = min(client_dispo, key = lambda t: t[1])
+        tournee.append(prochain)
+        check.add(prochain)
+        distance_tot += matrice_dist[ici][prochain]
+        ici = prochain
+    tournee.append(depart)
+    distance_tot += matrice_dist[ici][depart]
+    return(tournee, distance_tot)
+
+print(solution(graphe, 0))
+
+
+coord_x = [clients[i][0][0] for i in range(len(clients))]
+coord_y = [clients[i][0][1] for i in range(len(clients))]
 plt.scatter(coord_x, coord_y, marker='o', label = 'Clients')
-plt.scatter(depot[0], depot[1], color = 'red', label = 'Depot')
+plt.scatter(depot[0][0], depot[0][1], color = 'red', label = 'Depot')
 plt.legend()
 plt.show()
