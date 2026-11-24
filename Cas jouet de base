@@ -7,10 +7,10 @@ import numpy as np
 
 random.seed(42)
 nb_clients = 9
-C = 500  #capacité des véhicules
+C = 20  #capacité des véhicules
 
-# Définition du problème
-depot = ((random.randint(-50,50),random.randint(-50,50)),0)   # demande à 0 pour le depot
+# -------------------------- Définition du problème
+depot = ((0,0),0)   # demande à 0 pour le depot
 clients = []
 for i in range(nb_clients):
     x = random.randint(-50,50)
@@ -55,23 +55,32 @@ def solution(graphe, depart):
     charge = 0
     while len(clients_traites) < nb_clients:
         client_dispo = [(v,d) for v,d in graphe[ici] if v not in clients_traites and charge + clients[v][1] < C]
-        prochain, _ = min(client_dispo, key = lambda t: t[1])
+        if not client_dispo:
+            prochain = depart
+            charge = 0
+        else :
+            prochain, _ = min(client_dispo, key = lambda t: t[1])
+            clients_traites.add(prochain)
+            charge += clients[prochain][1]
         tournee.append(prochain)
-        clients_traites.add(prochain)
         distance_tot += matrice_dist[ici][prochain]
-        charge += clients[prochain][1]
         ici = prochain
     tournee.append(depart)
     distance_tot += matrice_dist[ici][depart]
-    return(tournee, distance_tot, charge)
+    return(tournee, distance_tot)
 
 print(solution(graphe, 0))    # 0 est le rang du depot dans clients
+tournee,_ = solution(graphe,0)
 
+# -------------------------- Affichage
 coord_x = [clients[i][0][0] for i in range(len(clients))]
 coord_y = [clients[i][0][1] for i in range(len(clients))]
 plt.scatter(coord_x, coord_y, marker='o', label = 'Clients')
 for i in range(1,len(clients)):
     plt.text(coord_x[i],coord_y[i],str(i))
 plt.scatter(depot[0][0], depot[0][1], color = 'red', label = 'Depot')
+X = [clients[i][0][0] for i in tournee]
+Y = [clients[i][0][1] for i in tournee]
+plt.plot(X, Y, label = 'Chemin', linewidth = 0.5, color = 'black')
 plt.legend()
 plt.show()
