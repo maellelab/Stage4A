@@ -5,9 +5,12 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 
+
+# -------------------------- Paramètres variables à choisir
 random.seed(42)
 nb_clients = 9
 C = 20  #capacité des véhicules
+
 
 # -------------------------- Définition du problème
 depot = ((0,0),0)   # demande à 0 pour le depot
@@ -21,6 +24,7 @@ for i in range(nb_clients):
 clients = [depot] + clients  #ajout du depot dans les stop possibles avec index 0
 nb_clients = len(clients)
 print(clients)   # par ex clients = [((31, -36), 0), ((-47, 44), 5), ((-19, -22), 3), ((44, -37), 9)]
+
 
 # -------------------------- Résolution classique à l'instinct
 def distance(a,b):    # distance entre deux clients, a = client[i] et b = clients[j]
@@ -47,6 +51,7 @@ for i in range(len(clients)):
                 graphe[i] = [(j, dist)]
 print(graphe)
 
+# Création d'une première solution viable
 def solution(graphe, depart):
     ici = depart
     tournee = [depart]
@@ -70,17 +75,56 @@ def solution(graphe, depart):
     return(tournee, distance_tot)
 
 print(solution(graphe, 0))    # 0 est le rang du depot dans clients
-tournee,_ = solution(graphe,0)
+tournee_1,_ = solution(graphe,0)
 
-# -------------------------- Affichage
+tournee_test = [0] + [element for element in tournee_1 if element != 0] + [0]  #enlève les retours au dépot intermédiares
+print(tournee_test)
+
+
+# -------------------------- Amélioration pour trouver une meilleure solution mais boucle unique donc min dist mais pas min véhicule
+def optimisation_2_opt(matrice_dist, tournee):
+    amelioration = True
+    while amelioration:
+        amelioration = False
+        for i in range(len(tournee)-2):
+            for j in range(i+2, len(tournee)-1):
+                dist_avant = matrice_dist[tournee[i]][tournee[i+1]] + matrice_dist[tournee[j]][tournee[j+1]]
+                dist_apres = matrice_dist[tournee[i]][tournee[j]] + matrice_dist[tournee[i+1]][tournee[j+1]]
+                if dist_apres < dist_avant - 1e-12 :
+                    tournee = tournee[:i+1] + tournee[j:i:-1] + tournee[j+1:]
+                    amelioration = True 
+    return(tournee)
+print(optimisation_2_opt(matrice_dist, tournee_1), optimisation_2_opt(matrice_dist, tournee_test))
+tournee_best = optimisation_2_opt(matrice_dist, tournee_1)
+tournee_test_best = optimisation_2_opt(matrice_dist, tournee_test)
+
+# -------------------------- Affichage 
 coord_x = [clients[i][0][0] for i in range(len(clients))]
 coord_y = [clients[i][0][1] for i in range(len(clients))]
 plt.scatter(coord_x, coord_y, marker='o', label = 'Clients')
 for i in range(1,len(clients)):
     plt.text(coord_x[i],coord_y[i],str(i))
 plt.scatter(depot[0][0], depot[0][1], color = 'red', label = 'Depot')
-X = [clients[i][0][0] for i in tournee]
-Y = [clients[i][0][1] for i in tournee]
-plt.plot(X, Y, label = 'Chemin', linewidth = 0.5, color = 'black')
+X = [clients[i][0][0] for i in tournee_1]
+Y = [clients[i][0][1] for i in tournee_1]
+plt.plot(X, Y, label = 'Chemin', linewidth = 0.9, color = 'black')
+X_best = [clients[i][0][0] for i in tournee_best]
+Y_best = [clients[i][0][1] for i in tournee_best]
+plt.plot(X_best, Y_best, label = 'Chemin amélioré', linewidth = 0.4, color = 'lightgreen')
+plt.title(label = 'Représentation de la situation')
 plt.legend()
 plt.show()
+
+
+
+# -------------------------- Fonction de vérification (pas d'utilité réelle)
+def nb_vehicule(tournee):
+    charge = 0
+    K = 1
+    for client in tournee:
+        charge += clients[client][1]
+        if charge > C:
+            charge = clients[client][1]
+            K += 1
+    return K
+print(nb_vehicule(tournee_1), nb_vehicule(tournee_best), nb_vehicule(tournee_test_best))
